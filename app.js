@@ -8,7 +8,7 @@
  */
 
 var express = require('express'); // Express web server framework
-var request = require('request'); // "Request" library
+var request = require('request-promise-native'); // "Request" library
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 
@@ -16,7 +16,8 @@ var client_id = 'd1161a068c0c409a874e02accdbf7642'; // Your client id
 var client_secret = '69f2180bd6fa437fb28b38b426159b74'; // Your secret
 var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
 
-var playlist_uri = '0i9Ug5G2xLQPfpXG5Nq5BY';
+var playlist_uri = '137g2TfXKcad6Wjnr2IyFm';
+var user_id = '1255393257';
 
 /**
  * Generates a random string containing numbers and letters
@@ -133,31 +134,59 @@ app.get('/refresh_token', function(req, res) {
 });
 
 app.get('/current_track', function(req, res) {
-	var options = {
-		url: 'https://api.spotify.com/v1/me/player/currently-playing',
-		headers: { 'Authorization': 'Bearer ' + req.query.access_token },
-		json: true
-	};
-	request.get(options, function(error, response, body) {
-		if (!error && response.statusCode === 200) {
-			var current_track = body.item.name;
-			var track_uri = body.item.uri;
-			options = {
-				url: 'https://api.spotify.com/v1/users/1255393257/playlists/' + playlist_uri + '/tracks?' + 
-				querystring.stringify({
-					uris: track_uri
-				}),
-				headers: { 'Authorization': 'Bearer ' + req.query.access_token }, 
-			};
-			request.post(options, function(error, response, body) {
-				console.log(current_track);
-			});
-			res.send({
-				'current_track': current_track
-			});
-		}
+  var options = {
+    url: 'https://api.spotify.com/v1/me/player/currently-playing',
+    headers: { 'Authorization': 'Bearer ' + req.query.access_token },
+    json: true
+  };
+  request.get(options, function(error, response, body) {
+    if (!error && response.statusCode === 200) {
+      var current_track = body.item.name;
+      var track_uri = body.item.uri;
+      var hasTrackInPlaylist = false;
 
-	});
+      options = {
+        url: 'https://api.spotify.com/v1/users/' + user_id + '/playlists/' + playlist_uri + '/tracks?' +
+        querystring.stringify({
+          fields: 'items.track.uri'
+        }),
+        headers: { 'Authorization': 'Bearer ' + req.query.access_token },
+        json: true
+      };      
+      request.get(options, function(error2, response2, body2) {
+        if (!error2 && response2.statusCode === 200) {
+          for (var tracks in body2.items) {
+            if (body2.items[tracks].track.uri === track_uri) {
+              console.log("Already have track in playlist, skipping add");
+              hasTrackInPlaylist = true;
+              break;
+            }
+          }
+        }
+      }).then(function() {
+        if (!hasTrackInPlaylist) {
+          var addOptions = {
+            url: 'https://api.spotify.com/v1/users/' + user_id + '/playlists/' + playlist_uri + '/tracks?' + 
+            querystring.stringify({
+              uris: track_uri
+            }),
+            headers: { 'Authorization': 'Bearer ' + req.query.access_token }
+          };
+          request.post(addOptions, function(error3, response3, body3) {
+            console.log(current_track);
+          });
+          res.send({
+            'current_track': current_track
+          });
+        } else {
+          hasTrackInPlaylist = false;
+          res.send({
+            'current_track': 'null'
+          });
+        }
+      }); 
+    }
+  });
 });
 
 console.log('Listening on 8888');
