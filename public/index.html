@@ -33,7 +33,7 @@
       <br>
       <div id="current-track">
       </div>
-      <button class="btn btn-primary" id="get-current-track" accesskey="x">Get Current Track</button>
+      <button class="btn btn-primary" id="get-current-track" accesskey="x">Add Current Track</button>
       <button class="btn btn-primary" id="next-track">Next Track (Premium)</button>
     </div>
 
@@ -170,11 +170,13 @@
                 trackPlaceholder.innerHTML = trackTemplate({
                   current_track: 'This song was added into your playlist: ' + current_track
                 });
+				trackPlaceholder.style.border = "3px solid green";
               }
               else {
                 trackPlaceholder.innerHTML = trackTemplate({
                   current_track: 'This song is already present in your playlist: ' + current_track
                 });
+				trackPlaceholder.style.border = "3px solid red";
               }
               btn.style.borderColor = 'white';
             });
