@@ -47,7 +47,7 @@ app.get('/login', function(req, res) {
   res.cookie(stateKey, state);
 
   // your application requests authorization
-  var scope = 'user-read-private user-read-email user-read-currently-playing playlist-modify-private playlist-modify-public';
+  var scope = 'user-read-private user-read-email user-read-currently-playing playlist-modify-private playlist-modify-public user-modify-playback-state';
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       response_type: 'code',
@@ -176,17 +176,31 @@ app.get('/current_track', function(req, res) {
             console.log(current_track);
           });
           res.send({
-            'current_track': current_track
+            'current_track': current_track,
+            'duplicate': 'false'
           });
         } else {
           hasTrackInPlaylist = false;
           res.send({
-            'current_track': 'null'
+            'current_track': current_track,
+            'duplicate': 'true'
           });
         }
       }); 
     }
   });
+});
+
+app.get('/next_track', function(req, res) {
+  var nextOptions = {
+    url: 'https://api.spotify.com/v1/me/player/next',
+    headers: { 'Authorization': 'Bearer ' + req.query.access_token },
+    json: true
+  };
+  request.post(nextOptions, function(error, response, body) {
+    console.log(body);
+  });
+  res.send();
 });
 
 console.log('Listening on 8888');
